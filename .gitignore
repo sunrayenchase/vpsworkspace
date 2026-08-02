@@ -18,26 +18,39 @@
 # 5. Allow Caddy structural tracking but ignore dynamic data/configs
 !caddy/
 !caddy/Caddyfile
-caddy/data/
-caddy/config/
 
-# 6. Track the folders mentioned in your docker-compose.yml, but keep them empty
+# 6. Allow folder structures into index tree
 !3x-ui/
 !3x-ui/db/
 !3x-ui/cert/
 !syncthing/
+!caddy/config/
+!caddy/data/
+!.backup/
 
-# Ignore all active production runtime contents inside those folders
-3x-ui/db/*
-3x-ui/cert/*
-syncthing/*
-
-# 7. Explicitly ignore your local backup storage folder completely
-.backup/
-
-# 8. Fail2ban Core Configurations Allow-list
+# 7. Fail2ban Core Configurations Allow-list
 !fail2ban/
 !fail2ban/jail.d/
 !fail2ban/jail.d/jail.local
 !fail2ban/filter.d/
 !fail2ban/filter.d/sshd.conf
+
+# =======================================================================
+# 8. Ignore all production runtime data (BLOCK RULES)
+# =======================================================================
+3x-ui/db/*
+3x-ui/cert/*
+syncthing/*
+caddy/config/*
+caddy/data/*
+.backup/*
+
+# =======================================================================
+# 9. Explicitly force placeholder exceptions (LAST UNBLOCK RULES WIN)
+# =======================================================================
+!3x-ui/db/.gitkeep
+!3x-ui/cert/.gitkeep
+!syncthing/.gitkeep
+!caddy/config/.gitkeep
+!caddy/data/.gitkeep
+!/.backup/.gitkeep
