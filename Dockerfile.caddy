@@ -1,0 +1,15 @@
+# Stage 1: Build Caddy with required plugins
+FROM caddy:builder-alpine AS builder
+RUN xcaddy build \
+    --with github.com/mholt/caddy-l4 \
+    --with github.com/caddy-dns/duckdns
+
+# Stage 2: Create the final lightweight image
+FROM caddy:alpine
+
+# Install libcap to modify binary network privileges, apply them, and remove libcap to save space
+RUN apk add --no-cache libcap && \
+    setcap cap_net_bind_service=+ep /usr/bin/caddy && \
+    apk del libcap
+
+COPY --from=builder /usr/bin/caddy /usr/bin/caddy

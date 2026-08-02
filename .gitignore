@@ -1,0 +1,43 @@
+# 1. Ignore absolutely everything by default
+*
+.*
+
+# 2. Allow your core project configuration files
+!docker-compose.yml
+!Dockerfile.caddy
+!README.md
+!.gitignore
+
+# 3. Allow your environment variable template
+!.env.example
+
+# 4. Allow your custom scripts folder and everything inside it
+!bscript/
+!bscript/**
+
+# 5. Allow Caddy structural tracking but ignore dynamic data/configs
+!caddy/
+!caddy/Caddyfile
+caddy/data/
+caddy/config/
+
+# 6. Track the folders mentioned in your docker-compose.yml, but keep them empty
+!3x-ui/
+!3x-ui/db/
+!3x-ui/cert/
+!syncthing/
+
+# Ignore all active production runtime contents inside those folders
+3x-ui/db/*
+3x-ui/cert/*
+syncthing/*
+
+# 7. Explicitly ignore your local backup storage folder completely
+.backup/
+
+# 8. Fail2ban Core Configurations Allow-list
+!fail2ban/
+!fail2ban/jail.d/
+!fail2ban/jail.d/jail.local
+!fail2ban/filter.d/
+!fail2ban/filter.d/sshd.conf

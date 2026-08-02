@@ -1,0 +1,69 @@
+{
+	# Disables automatic port 80 redirects and clears out the warnings
+	auto_https disable_redirects
+
+	servers {
+		trusted_proxies static private_ranges 127.0.0.1 ::1
+	}
+
+	servers :1443 {
+		listener_wrappers {
+			proxy_protocol
+			tls
+		}
+	}
+
+	https_port 1443
+
+	layer4 {
+		:443 {
+			# Web services
+			@docker_tls tls sni {$XUI_WEB}.{$DOMAIN} {$SYNC_WEB}.{$DOMAIN}
+			route @docker_tls {
+				proxy localhost:1443 {
+					proxy_protocol v2
+				}
+			}
+
+			# Fallback
+			route {
+				proxy 3x-ui:{$XUI_INBOUND_PORT} {
+					proxy_protocol v2
+				}
+			}
+		}
+	}
+}
+
+{$XUI_WEB}.{$DOMAIN}:1443 {
+	tls {
+		dns duckdns {env.DUCKDNS_TOKEN}
+	}
+	reverse_proxy 3x-ui:{$XUI_PANEL_PORT} {
+		# Standard proxy headers so service knows it's behind an HTTPS proxy
+		header_up Host {http.request.host}
+		header_up X-Real-IP {http.request.remote}
+	}
+}
+
+{$SYNC_WEB}.{$DOMAIN}:1443 {
+	tls {
+		dns duckdns {env.DUCKDNS_TOKEN}
+	}
+	handle_path {$SYNC_SECRET_PATH}* {
+		reverse_proxy syncthing:{$SYNC_PANEL_PORT} {
+			# Standard proxy headers so service knows it's behind an HTTPS proxy            
+			header_up Host {http.request.host}
+			header_up X-Real-IP {http.request.remote}
+		}
+	}
+	handle {
+		respond "Not Found" 404
+	}
+}
+
+{$DOMAIN}:1443, *.{$DOMAIN}:1443 {
+	tls {
+		dns duckdns {env.DUCKDNS_TOKEN}
+	}
+}
