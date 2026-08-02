@@ -11,7 +11,7 @@ docker-workspace/
 ├── .env                       # Local Environment Variables
 ├── docker-compose.yml         # Main Stack Orchestration File
 ├── Dockerfile.caddy           # Custom Caddy build (with DuckDNS plugin)
-├── .\${BACKUP_FOLDER_NAME}/    # Local backup output and log directory
+├── .backup/                   # Local backup output directory
 ├── 3x-ui/                     # 3x-ui persistent storage directory
 │   ├── db/                    # Core Xray/3x-ui operational databases (x-ui.db)
 │   └── cert/                  # Hardened SSL/TLS custom certificate storage
@@ -58,11 +58,35 @@ docker compose up -d --build
 Once deployed, all administrative configurations are fully handled via web browsers using the following domain endpoints:
 
 ### 1. 3x-ui Panel Access
+
 The proxy infrastructure console is accessible directly at your specialized subdomain URL:
 ```text
 https://${XUI_WEB}.${DUCKDNSDOMAIN}/{XUI_SECRET_PATH}/
 ```
 *   **Security Note:** On your very first login, secure this pane immediately by changing your admin credentials in the panel panel setting configurations.
+
+### 2. Syncthing Dashboard Access & Pairing
+All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
+```text
+https://\${SYNC_WEB}.DUCKDNSDOMAIN/{SYNC_SECRET_PATH}/
+```
+*   **⚠️ Mandatory trailing slash:** You must append the final `/` to your secret path in the URL string, or asset paths will return a 404 block.
+*   **First-Time Authentication Setup:** Syncthing will launch showing an initialization danger notification flag. Click **Actions -> Settings -> GUI** right away to enforce a strong administrative **Username** and **Password** barrier on top of your URL path block.
+
+---
+
+## 📦 Migrating Existing 3x-ui Configuration Data
+
+If you are moving an existing standalone instance or an older 3x-ui installation onto this stack, you can migrate your operational states seamlessly before starting up the services:
+
+1. **Database Migration**: Drop your existing `x-ui.db` file directly into the local `./3x-ui/db/` subdirectory.
+2. **Certificate Migration**: Place any pre-generated custom encryption profiles (`.crt`, `.key`, `.pem` files) directly inside the `./3x-ui/cert/` folder.
+3. **Permissions Sync**: Ensure the newly dropped items match your system host identifier so the container engine does not hit execution locks:
+   ```bash
+   chown -R \({USER_ID}:\){USER_ID} ./3x-ui
+   ```
+
+When the `3x-ui` container starts up, it will automatically detect and mount these database and certificate directories, preserving your configurations, users, and inbounds.
 
 ### 🔑 Emergency 3x-ui Web Path Recovery (SQL)
 If you misplace, forget, or accidentally lock yourself out of your custom 3x-ui web panel routing subpath, you can reset it instantly back to the root (`/`) directory by injecting a direct SQLite modification command line utility straight into the container:
@@ -77,29 +101,6 @@ docker compose restart 3x-ui
 ```
 *Your panel is now immediately accessible over your plain root subdomain link: `https://${XUI_WEB}.${DUCKDNSDOMAIN}`.*
 
-### 2. Syncthing Dashboard Access & Pairing
-All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
-```text
-https://\${SYNC_WEB}.DUCKDNSDOMAIN/{SYNC_SECRET_PATH}/
-```
-*   **⚠️ Mandatory trailing slash:** You must append the final `/` to your secret path in the URL string, or asset paths will return a 404 block.
-*   **First-Time Authentication Setup:** Syncthing will launch showing an initialization danger notification flag. Click **Actions -> Settings -> GUI** right away to enforce a strong administrative **Username** and **Password** barrier on top of your URL path block.
-
----
-
-## 📦 Migrating Existing Configuration Data
-
-If you are moving an existing standalone instance or an older 3x-ui installation onto this stack, you can migrate your operational states seamlessly before starting up the services:
-
-1. **Database Migration**: Drop your existing `x-ui.db` file directly into the local `./3x-ui/db/` subdirectory.
-2. **Certificate Migration**: Place any pre-generated custom encryption profiles (`.crt`, `.key`, `.pem` files) directly inside the `./3x-ui/cert/` folder.
-3. **Permissions Sync**: Ensure the newly dropped items match your system host identifier so the container engine does not hit execution locks:
-   ```bash
-   chown -R \({USER_ID}:\){USER_ID} ./3x-ui
-   ```
-
-When the `3x-ui` container starts up, it will automatically detect and mount these database and certificate directories, preserving your configurations, users, and inbounds.
-
 ---
 
 ## 🛡️ Security & Intrusion Prevention
@@ -108,7 +109,7 @@ When the `3x-ui` container starts up, it will automatically detect and mount the
 * **Network Isolation**: Syncthing port `${SYNC_PANEL_PORT}` is not exposed to the public internet interface. It can only be interfaced through Caddy's internal software bridge network (`server_network`).
 * **Url Obfuscation Path Routing**: Standard scans to your root domains automatically return a dummy `404 Not Found` response. Access to the Syncthing console requires matching the hidden token variable path: `https://${SYNC_WEB}.${DUCKDNSDOMAIN}/${SYNC_SECRET_PATH}/`.
 * **Active Containerized Firewall (Fail2Ban)**: Operates directly in the host network space (`network_mode: host`) with net admin capabilities. It hooks into your native system logs to intercept attacks:
-  * **Host SSH protection**: Triggers a global net ban after **3** failed connection strikes.
+  * **Host SSH protection**: Triggers a global net ban after **5** failed connection strikes.
 
 ### 📊 Fail2Ban Operations & Auditing Commands
 
@@ -137,7 +138,7 @@ To capture a point-in-time checkpoint snapshot immediately before running host u
 docker exec -it backup /bin/bash /workspace/bscript/backup.sh --force
 ```
 
-### ⚡ Disaster Recovery Restoration Workflow
+### ⚡ Disaster Recovery Restoration Workflow (not tested)
 If your primary host suffers structural failure or database corruption:
 
 1. **Deploy Bare Stack**: Restore the raw directory structural layouts alongside your custom `.env` parameters file and fire up the cluster core using the fast zero-build flag:
