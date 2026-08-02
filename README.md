@@ -68,7 +68,7 @@ https://${XUI_WEB}.${DUCKDNSDOMAIN}/{XUI_SECRET_PATH}/
 ### 2. Syncthing Dashboard Access & Pairing
 All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
 ```text
-https://${SYNC_WEB}.DUCKDNSDOMAIN/{SYNC_SECRET_PATH}/
+https://${SYNC_WEB}.${DUCKDNSDOMAIN}/{SYNC_SECRET_PATH}/
 ```
 *   **⚠️ Mandatory trailing slash:** You must append the final `/` to your secret path in the URL string, or asset paths will return a 404 block.
 *   **First-Time Authentication Setup:** Syncthing will launch showing an initialization danger notification flag. Click **Actions -> Settings -> GUI** right away to enforce a strong administrative **Username** and **Password** barrier on top of your URL path block.
