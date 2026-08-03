@@ -129,14 +129,14 @@ Once deployed, all administrative configurations are fully handled via web brows
 ### 1. 3x-ui Panel Access
 The proxy infrastructure console is accessible directly at your specialized subdomain URL:
 ```text
-https://${XUI_WEB}.${DUCKDNSDOMAIN}/{XUI_SECRET_PATH}/
+https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
 ```
 *   **Security Note:** On your very first login, secure this pane immediately by changing your admin credentials in the panel panel setting configurations.
 
 ### 2. Syncthing Dashboard Access & Pairing
 All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
 ```text
-https://\${SYNC_WEB}.\({DUCKDNSDOMAIN}/\){SYNC_SECRET_PATH}/
+https://${SYNC_WEB}.{DUCKDNSDOMAIN}/${SYNC_SECRET_PATH}/
 ```
 *   **⚠️ Mandatory trailing slash:** You must append the final `/` to your secret path in the URL string, or asset paths will return a 404 block.
 *   **First-Time Authentication Setup:** Syncthing will launch showing an initialization danger notification flag. Click **Actions -> Settings -> GUI** right away to enforce a strong administrative **Username** and **Password** barrier on top of your URL path block.
