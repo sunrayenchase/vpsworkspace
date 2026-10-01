@@ -45,6 +45,8 @@ services:
       XUI_ENABLE_FAIL2BAN: "true"
       XUI_PORT: ${XUI_PANEL_PORT}
       TZ: ${TZ}
+      XUI_MEMORY_LIMIT: "150"
+      GOGC: "20"
     volumes:
       - ./3x-ui/db:/etc/x-ui
       - ./3x-ui/cert:/root/cert
@@ -76,13 +78,18 @@ services:
       - CRON_SCHEDULE=${CRON_SCHEDULE}
     entrypoint: >
       /bin/sh -c "
-      apk add --no-cache bash tar tzdata;
-      echo 'Setting up periodic backup...';
-      echo \"$$CRON_SCHEDULE /bin/bash /workspace/bscript/backup.sh >> /workspace/$$BACKUP_FOLDER_NAME/backup.log 2>&1\" > /etc/cron.d/backup-cron;
-      chmod 0644 /etc/cron.d/backup-cron;
-      crontab /etc/cron.d/backup-cron;
-      echo 'Cron service started. Watching schedule...';
-      crond -f -l 2
+      echo \"[$(date +'%Y-%m-%d %H:%M:%S')] Installing dependencies (bash, tar, tzdata)...\" &&
+      apk add --no-cache bash tar tzdata > /dev/null;
+      
+      echo \"[$(date +'%Y-%m-%d %H:%M:%S')] Setting up periodic backup...\" &&
+      mkdir -p /var/spool/cron/crontabs &&
+      
+      # Setup the crontab using Alpine's native root location
+      echo \"$$CRON_SCHEDULE /bin/bash /workspace/bscript/backup.sh -f > /proc/1/fd/1 2>&1\" > /var/spool/cron/crontabs/root &&
+      chmod 0600 /var/spool/cron/crontabs/root &&
+      
+      echo \"[$(date +'%Y-%m-%d %H:%M:%S')] Cron service started. Watching schedule ($$CRON_SCHEDULE)...\" &&
+      exec crond -f -l 8
       "
 
   syncthing:
