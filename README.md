@@ -1,12 +1,12 @@
-# 🌐 Secure VPS Workspace Stack
+# 🌐 VPS Tunnel Stack (3x-ui, Caddy, Fail2Ban, Syncthing)
 
-A lightweight, portable workspace featuring reverse proxy routing via Caddy with Layer 4 support, proxy infrastructure with 3x-ui, automated workspace backup generation with real-time offsite replication via Syncthing, and active intrusion prevention powered by a containerized Fail2Ban engine tracking host SSH authentication attempts.
+Caddy reverse proxy to 3x-ui web-panel and Syncthing web-panel to avoid sharing any ports except 22, 80 and 443. Fail2Ban for SSH. Syncthing to remotely upload backup snapshot.
 
 ---
 
 ## 🛠️ Prerequisites & Initial Setup
 
-Before deploying the workspace stack, complete the following local environmental initialization steps on your bare-metal server instance:
+Before deploying the workspace stack, complete the following local environmental initialization steps on your VPS server instance:
 
 ### 1. Provision Host System Environment
 Log in via your root account and establish a dedicated operational non-root system user mapped with User ID `1000` to prevent privilege execution conflicts, then install the Docker orchestration subsystem engine:
@@ -15,20 +15,91 @@ Log in via your root account and establish a dedicated operational non-root syst
 sudo useradd -u 1000 -m -s /bin/bash vpsuser
 sudo usermod -aG sudo vpsuser
 
+# Set timezone
+sudo timedatectl set-timezone Europe/Moscow
+
+# Disable sudo password (optional)
+sudo visudo
+```
+
+In the bottom of the file, add the following line: vpsuser ALL=(ALL) NOPASSWD: ALL
+
+Add ssh certificates login for vpsuser
+```bash
+# Relogin
+su - vpsuser
+
+# Add a ssh key login
+mkdir ~/.ssh
+nano ~/.ssh/authorized_keys
+```
+
+Paste the public key there.
+```bash
 # Update host system core package registries
 sudo apt update && sudo apt upgrade -y
 
-# Deploy Docker Compose system dependencies
-sudo apt install docker-compose-v2 docker.exe-ce -y
+# Install Midnight Commander
+sudo apt install mc
 ```
 
-### 2. Handle External Domain Configuration
-*   Navigate to [duckdns.org](https://duckdns.org), authenticate via your provider token identifier, and register a free domain subkey slot (e.g., `sub.duckdns.org`).
-*   Bind the target domain records to target your VPS host machine's external public static IPv4 address.
+Set up Docker's apt repository.
+```bash
+# Add Docker's official GPG key:
+sudo apt update
+sudo apt install ca-certificates curl
+sudo install -m 0755 -d /etc/apt/keyrings
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo chmod a+r /etc/apt/keyrings/docker.asc
+```
 
-### 3. Establish Replicating Infrastructure
-*   Ensure an external secondary system infrastructure machine (such as a home laboratory server, local computer, or secondary cloud instance) has an operational Syncthing node configured and waiting to receive the workspace automated `.backup/` cluster data replication stream.
+```bash
+# Add the repository to Apt sources:
+sudo tee /etc/apt/sources.list.d/docker.sources <<EOF
+Types: deb
+URIs: https://download.docker.com/linux/ubuntu
+Suites: $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+Components: stable
+Architectures: $(dpkg --print-architecture)
+Signed-By: /etc/apt/keyrings/docker.asc
+EOF
+```
 
+```bash
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+```
+
+Add user to docker group (omit sudo for each docker compose).
+```bash
+sudo usermod -aG docker vpsuser
+```
+
+Verify that Docker is running:
+```bash
+sudo systemctl status docker
+```
+
+Remove Ubuntu login welcome message garbage (optional).
+```bash
+sudo chmod -x /etc/update-motd.d/10-help-text
+sudo chmod -x /etc/update-motd.d/50-motd-news
+sudo chmod -x /etc/update-motd.d/85-fwupd
+sudo chmod -x /etc/update-motd.d/90-updates-available
+sudo systemctl disable fwupd fwupd-refresh.timer
+sudo systemctl stop fwupd
+```
+
+Set/change hostname (optional).
+```bash
+sudo hostnamectl set-hostname vps
+```
+
+Clone this repo.
+```bash
+mkdir ~/vps
+git clone https://github.com/sunrayenchase/vpsworkspace ~/vps
+```
 ---
 
 ## 📁 Directory Architecture
@@ -54,48 +125,71 @@ docker-workspace/
     └── restore.sh             # Interactive disaster recovery script
 ```
 
----
+### 2. Handle External Domain Configuration
+*   Navigate to [duckdns.org](https://duckdns.org), authenticate via your provider token identifier, and register a free domain subkey slot (e.g., `sub.duckdns.org`).
+*   Bind the target domain records to target your VPS host machine's external public static IPv4 & IPv6 addresses.
 
-## ⚙️ Prerequisites & Environment Setup (`.env`)
-
-Create a `.env` file in the root workspace folder from your template example. Customize all required environment variables, making sure your system user IDs and domain routing parameters match your hosting environment before initialization.
-
----
-
-## 🏗️ Caddy Engine Extensibility Architecture
-
-The local web server infrastructure relies on a custom-compiled multi-stage container deployment layer rather than using the generic static Caddy binary distribution profile. 
-
-It is natively generated and built using **`xcaddy`** to incorporate two specialized ecosystem components:
-1.  **`://github.com`**: Leverages the DuckDNS API token sequence to perform automated ACME cryptographic wildcard SSL/TLS certificate handling validations via programmatic DNS-01 challenges.
-2.  **`://github.com`**: Intercepts inbound connection streams on raw lower-level sockets before HTTP translation layers. It handles advanced multiplexing logic, permitting Postgres connection routing, raw TLS ALPN inspection tricks, and Proxy Protocol v2 handshakes alongside normal HTTP services. Learn more via the official [Caddy Layer 4 Repository Page](https://://github.com).
-
-### ⏳ Build Overhead & Resource Requirements
-Because compiling Go-based plugins from source is resource-intensive:
-*   **Compilation Time:** On single-core or entry-level low-spec VPS configurations, compiling the custom Caddy binary can take anywhere from **5 to 10 minutes** to complete.
-*   **Disk Space Cache Constraints:** The temporary build dependencies and compiler layers require approximately **~3 GiB of free disk space** to complete successfully.
-
-If your host runs critically low on storage capacity following compilation, reclaim that wasted disk space instantly by manually dropping the compilation layer records:
-```bash
-docker builder prune -a -f
-```
+### 3. Establish Replicating Infrastructure
+*   Ensure an external secondary system infrastructure machine (such as a home laboratory server, local computer, or secondary cloud instance) has an operational Syncthing node configured and waiting to receive the workspace automated `.backup/` cluster data replication stream.
 
 ---
 
 ## 🚀 Deployment Instructions
 
-### 1. Configure System Execution Permissions
+### 1. Prerequisites & Environment Setup (`.env`)
+Create a `.env` file in the root workspace folder from your template example. Customize all required environment variables before initialization.
+```bash
+# Random 18-symbol URI Path generator
+tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 18
+echo
+```
+
+### 2. Configure System Execution Permissions
 Grant execution capabilities to the internal workspace utility scripts on your host machine:
 ```bash
 chmod +x bscript/backup.sh bscript/restore.sh
 chmod -R 644 ./fail2ban/jail.d/* ./fail2ban/filter.d/*
 ```
 
-### 2. Build and Boot the Services Stack
+### 3. Build and Boot the Services Stack
 Compile the custom Caddy wrapper container image and deploy the entire architecture in the background:
 ```bash
 docker compose up -d --build
 ```
+
+### ⏳ Custom Caddy build with duckdns and caddy-l4.
+Compiling Go-based plugins from source is resource-intensive:
+*   **Compilation Time:** On single-core or entry-level low-spec VPS configurations, compiling the custom Caddy binary can take anywhere from **10 to 60 minutes** to complete.
+*   **Disk Space Cache Constraints:** The temporary build dependencies and compiler layers require approximately **~3 GiB of free disk space** to complete successfully.
+
+1.  **`https://github.com/caddy-dns/duckdns`**: Leverages the DuckDNS API token sequence to perform automated ACME cryptographic wildcard SSL/TLS certificate handling validations via programmatic DNS-01 challenges.
+2.  **`https://github.com/mholt/caddy-l4`**: Intercepts inbound connection streams on raw lower-level sockets before HTTP translation layers. It handles advanced multiplexing logic, permitting Postgres connection routing, raw TLS ALPN inspection tricks, and Proxy Protocol v2 handshakes alongside normal HTTP services. Learn more via the official (not user in the default configuration).
+
+
+### 4. Enter the CLI 3x-ui settings to setup login and password for web-panel access.
+Compile the custom Caddy wrapper container image and deploy the entire architecture in the background (no need to setup SSL certificates - the latter warning in 3x-ui webpanel may be ignored):
+```bash
+docker exec -it 3x-ui x-ui
+```
+
+### 5. Enter 3x-ui web-panel for initial setup.
+The proxy infrastructure console is accessible directly at your specialized subdomain URL:
+```text
+https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
+```
+*   **3x-ui and xray core upgrades warning:** xray frequently adds backward compatibility issues with new version of the core please be careful with upgrading. Because of this the 3x-ui panel version is fixed to 3.7.0 here.
+*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to ${XUI_INBOUND_PORT} value from .env (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work); Inbound -> Security -> Min Client Ver must be set to "0" (for compatibility with clients with older cores).
+*   **Outboung to WARP:** setup free WARP outbound and route all the outgoing traffic there by default as a safeguard from spoofing the VPS IP by spying software aon your client i.e. by accessing ipinfo.io or similar services.
+*   **Client setting:** 3x-ui automatically passes to clients the connection port set in Inbounds, which must be changed to 443 manually. Connection server can be set ${DUCKDNSDOMAIN}.duckdns.org instead of the server IP.
+
+
+### 6. Enter Syncthing web-panel to setup backup folder sync to your place.
+All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
+```text
+https://${SYNC_WEB}.{DUCKDNSDOMAIN}/${SYNC_SECRET_PATH}/
+```
+*   **⚠️ Mandatory trailing slash:** You must append the final `/` to your secret path in the URL string, or asset paths will return a 404 block.
+*   **First-Time Authentication Setup:** Syncthing will launch showing an initialization danger notification flag. Click **Actions -> Settings -> GUI** right away to enforce a strong administrative **Username** and **Password** barrier on top of your URL path block.
 
 ---
 
@@ -103,13 +197,17 @@ docker compose up -d --build
 
 Always execute these orchestration commands directly from within your main root `docker-workspace/` directory:
 
-*   **Complete Rebuild and Relaunch**: Clears old layers, completely re-compiles Caddy plugins cache, and starts all system assets:
+*   **Fast Restart Without Rebuilding**: Safely loops the stack using the local image database without spending performance overhead running compile checkers:
     ```bash
     docker compose down && docker compose up -d
     ```
-*   **Fast Restart Without Rebuilding**: Safely loops the stack using the local image database without spending performance overhead running compile checkers:
+*   **Recreate the containers**: Applies new variables and configs: 
     ```bash
-    docker compose down && docker compose up -d --no-build
+    docker compose down && docker compose up -d --force-recreate    
+    ```
+*   **Recompile and rebuild the images**: Clears old layers, completely re-compiles Caddy plugins cache, and starts all system assets:
+    ```bash
+    docker compose down && docker compose up -d --build
     ```
 *   **Targeted Individual Service Restart**: Bypasses cycling the full workspace network chain when debugging a single node instance (e.g., `caddy`, `3x-ui`):
     ```bash
@@ -119,27 +217,11 @@ Always execute these orchestration commands directly from within your main root 
     ```bash
     docker compose logs -f [SERVICE_NAME]
     ```
-
----
-
-## 🖥️ Web Panel Graphical User Interfaces (GUIs)
-
-Once deployed, all administrative configurations are fully handled via web browsers using the following domain endpoints:
-
-### 1. 3x-ui Panel Access
-The proxy infrastructure console is accessible directly at your specialized subdomain URL:
-```text
-https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
+ *   **If your host runs critically low on storage capacity following compilation, reclaim that wasted disk space instantly by manually dropping the compilation layer records:
+    ```bash
+    docker system prune -a --volumes
+    ```
 ```
-*   **Security Note:** On your very first login, secure this pane immediately by changing your admin credentials in the panel panel setting configurations.
-
-### 2. Syncthing Dashboard Access & Pairing
-All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
-```text
-https://${SYNC_WEB}.{DUCKDNSDOMAIN}/${SYNC_SECRET_PATH}/
-```
-*   **⚠️ Mandatory trailing slash:** You must append the final `/` to your secret path in the URL string, or asset paths will return a 404 block.
-*   **First-Time Authentication Setup:** Syncthing will launch showing an initialization danger notification flag. Click **Actions -> Settings -> GUI** right away to enforce a strong administrative **Username** and **Password** barrier on top of your URL path block.
 
 ---
 
@@ -156,32 +238,7 @@ If you are moving an existing standalone instance or an older 3x-ui installation
 
 When the `3x-ui` container starts up, it will automatically detect and mount these database and certificate directories, preserving your configurations, users, and inbounds.
 
-### 🔑 Emergency 3x-ui Web Path Recovery (SQL)
-If you misplace, forget, or accidentally lock yourself out of your custom 3x-ui web panel routing subpath, you can reset it instantly back to the root (`/`) directory by injecting a direct SQLite modification command line utility straight into the container:
-```bash
-docker exec -it 3x-ui sqlite3 /etc/x-ui/x-ui.db "UPDATE settings SET value = '/' WHERE key = 'webMainPath';"
-```
-
-Once the database updates, restart the service container to clear its internal system configurations cache:
-```bash
-docker compose restart 3x-ui
-```
-*Your panel is now immediately accessible over your plain root subdomain link: `https://${XUI_WEB}.${DUCKDNSDOMAIN}`.*
-
 ---
-
-## 🛡️ Security, Intrusion Prevention & Known Issues
-
-*   **Non-Root Execution**: Caddy and Syncthing drop container privileges immediately upon launch via the native `user: "1000:1000"` directive to minimize host vulnerability vectors.
-*   **Network Isolation**: Syncthing port `${SYNC_PANEL_PORT}` is not exposed to the public internet interface. It can only be interfaced through Caddy's internal software bridge network (`server_network`).
-*   **Url Obfuscation Path Routing**: Standard scans to your root domains automatically return a dummy `404 Not Found` response. Access to the Syncthing console requires matching the hidden token variable path: `https://${SYNC_WEB}.${DUCKDNSDOMAIN}/${SYNC_SECRET_PATH}/`.
-*   **Asymmetric Active Dual-Firewall Setup (Fail2Ban)**: Defensive perimeter controls are handled asymmetrically across two distinct runtime zones:
-    1.  **Docker Interface Zone**: A containerized Fail2Ban wrapper container interfaces natively with the host network space (`network_mode: host`) running specific polling rules targeting `/var/log/auth.log` to filter and drop brute-force **Host SSH entry attempts** after 5 failure strikes.
-    2.  **Application Internal Zone**: The `3x-ui` service leverages its own native internal built-in Fail2Ban module to protect its inbound transport networks directly inside its container logic boundaries.
-
-### ⚠️ Critical Security Caveats & Blindspots
-*   **No Web Panel Brute-Force Monitoring**: The containerized host-level Fail2Ban jail protects *strictly* the server's OpenSSH terminal port. It **does not** read web layer traffic logs.
-*   **Web Console Exposure Alert**: If a malicious party uncovers your hidden obfuscation URL path arrays (`XUI_SECRET_PATH` or `SYNC_SECRET_PATH`), **neither the 3x-ui panel nor the Syncthing management dashboards are protected against password brute-forcing attacks.** You must manually set exceptionally strong, complex administrative passwords within those interfaces to block infiltration attempts.
 
 ### 📊 Fail2Ban Operations & Auditing Commands
 
@@ -209,8 +266,9 @@ To capture a point-in-time checkpoint snapshot immediately before running host u
 ```bash
 docker exec -it backup /bin/bash /workspace/bscript/backup.sh --force
 ```
+The backup schedule is set in docker-compose.yml.
 
-### ⚡ Recovery Restoration Workflow (never tested)
+### ⚡ Recovery Restoration Workflow (pure AI-slope never tested)
 If your primary host suffers structural failure or database corruption:
 
 1. **Deploy Bare Stack**: Restore the raw directory structural layouts alongside your custom `.env` parameters file and fire up the cluster core using the fast zero-build flag:
@@ -227,3 +285,4 @@ If your primary host suffers structural failure or database corruption:
    ```bash
    docker compose up -d --build
    ```
+   

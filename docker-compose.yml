@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.caddy
     image: vps-caddy:latest
-    pull_policy: build
+    pull_policy: missing
     container_name: caddy
     restart: unless-stopped
     user: "${USER_ID}:${USER_ID}"
@@ -17,7 +17,6 @@ services:
       DUCKDNS_TOKEN: ${DUCKDNSTOKEN}
       TZ: ${TZ}
       XUI_PANEL_PORT: ${XUI_PANEL_PORT}
-      XUI_REVERSE_PROXY_PORT: ${XUI_REVERSE_PROXY_PORT}
       XUI_INBOUND_PORT: ${XUI_INBOUND_PORT}
       XUI_WEB: ${XUI_WEB}
       SYNC_WEB: ${SYNC_WEB}
@@ -34,7 +33,7 @@ services:
         condition: service_healthy
 
   3x-ui:
-    image: ghcr.io/mhsanaei/3x-ui:latest
+    image: ghcr.io/mhsanaei/3x-ui:v3.7.0
     container_name: 3x-ui
     restart: unless-stopped
     cap_add:
@@ -44,15 +43,15 @@ services:
       XRAY_VMESS_AEAD_FORCED: "false"
       XUI_ENABLE_FAIL2BAN: "true"
       XUI_PORT: ${XUI_PANEL_PORT}
+      XUI_INIT_WEB_BASE_PATH: ${XUI_INIT_WEB_BASE_PATH}
       TZ: ${TZ}
       XUI_MEMORY_LIMIT: "150"
-      GOGC: "20"
+      XUI_GOGC: "20"
     volumes:
       - ./3x-ui/db:/etc/x-ui
       - ./3x-ui/cert:/root/cert
     networks:
-      server_network:
-        ipv4_address: ${XUI4}
+      - server_network
     healthcheck:
       test: ["CMD", "pidof", "x-ui"]
       interval: 10s
