@@ -182,6 +182,22 @@ https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
 *   **Outboung to WARP:** setup free WARP outbound and route all the outgoing traffic there by default as a safeguard from spoofing the VPS IP by spying software aon your client i.e. by accessing ipinfo.io or similar services.
 *   **Client setting:** 3x-ui automatically passes to clients the connection port set in Inbounds, which must be changed to 443 manually. Connection server can be set ${DUCKDNSDOMAIN}.duckdns.org instead of the server IP.
 
+---
+
+## 📦 Migrating Existing 3x-ui Configuration Data
+
+If you are moving an existing standalone instance or an older 3x-ui installation onto this stack, you can migrate your operational states seamlessly before starting up the services:
+
+1. **Database Migration**: Drop your existing `x-ui.db` file directly into the local `./3x-ui/db/` subdirectory.
+2. **Certificate Migration**: Place any pre-generated custom encryption profiles (`.crt`, `.key`, `.pem` files) directly inside the `./3x-ui/cert/` folder.
+3. **Permissions Sync**: Ensure the newly dropped items match your system host identifier so the container engine does not hit execution locks:
+   ```bash
+   chown -R 1000:1000 ./3x-ui
+   ```
+
+When the `3x-ui` container starts up, it will automatically detect and mount these database and certificate directories, preserving your configurations, users, and inbounds.
+
+---
 
 ### 6. Enter Syncthing web-panel to setup backup folder sync to your place.
 All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
@@ -221,22 +237,6 @@ Always execute these orchestration commands directly from within your main root 
     ```bash
     docker system prune -a --volumes
     ```
-```
-
----
-
-## 📦 Migrating Existing 3x-ui Configuration Data
-
-If you are moving an existing standalone instance or an older 3x-ui installation onto this stack, you can migrate your operational states seamlessly before starting up the services:
-
-1. **Database Migration**: Drop your existing `x-ui.db` file directly into the local `./3x-ui/db/` subdirectory.
-2. **Certificate Migration**: Place any pre-generated custom encryption profiles (`.crt`, `.key`, `.pem` files) directly inside the `./3x-ui/cert/` folder.
-3. **Permissions Sync**: Ensure the newly dropped items match your system host identifier so the container engine does not hit execution locks:
-   ```bash
-   chown -R 1000:1000 ./3x-ui
-   ```
-
-When the `3x-ui` container starts up, it will automatically detect and mount these database and certificate directories, preserving your configurations, users, and inbounds.
 
 ---
 
