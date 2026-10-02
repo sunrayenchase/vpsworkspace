@@ -1,6 +1,6 @@
 # 🌐 VPS Tunnel Stack (3x-ui, Caddy, Fail2Ban, Syncthing)
 
-Caddy reverse proxy to 3x-ui web-panel and Syncthing web-panel to avoid sharing any ports except 22, 80 and 443. Fail2Ban for SSH. Syncthing to remotely upload backup snapshot.
+Caddy reverse proxy to 3x-ui web-panel and Syncthing web-panel to avoid opening any ports except 22, 80 and 443. Fail2Ban for SSH. Syncthing to remotely upload backup snapshot.
 
 ---
 
