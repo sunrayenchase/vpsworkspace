@@ -33,7 +33,7 @@ services:
         condition: service_healthy
 
   3x-ui:
-    image: ghcr.io/mhsanaei/3x-ui:v3.7.0
+    image: ghcr.io/mhsanaei/3x-ui:latest #v3.7.0 - choose for better compatibility with sing-box core clients
     container_name: 3x-ui
     restart: unless-stopped
     cap_add:
