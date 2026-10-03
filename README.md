@@ -1,6 +1,6 @@
 # 🌐 VPS Tunnel Stack (3x-ui, Caddy, Fail2Ban, Syncthing)
 
-Caddy reverse proxy to 3x-ui web-panel and Syncthing web-panel to avoid opening any ports except 22, 80 and 443. Fail2Ban for SSH. Syncthing to remotely upload backup snapshot.
+Caddy reverse proxy to 3x-ui web-panel and Syncthing web-panel to avoid opening any ports except 22, 80 (tecnically not used) and 443. Fail2Ban for SSH. Syncthing to remotely upload backup snapshot.
 
 ---
 
@@ -22,7 +22,7 @@ sudo timedatectl set-timezone Europe/Moscow
 sudo visudo
 ```
 
-In the bottom of the file, add the following line: vpsuser ALL=(ALL) NOPASSWD: ALL
+In the bottom of the file, add the following line: `vpsuser ALL=(ALL) NOPASSWD: ALL`
 
 Add ssh certificates login for vpsuser:
 ```bash
@@ -36,12 +36,12 @@ nano ~/.ssh/authorized_keys
 
 Paste the public key there.
 
-Update and install MC:
+Update and install Midnight Commander:
 ```bash
 # Update host system core package registries
 sudo apt update && sudo apt upgrade -y
 
-# Install Midnight Commander
+# Install Midnight Commander (optional)
 sudo apt install mc
 ```
 
@@ -240,7 +240,7 @@ Always execute these orchestration commands directly from within your main root 
     ```bash
     docker compose logs -f [SERVICE_NAME]
     ```
- *   **If your host runs critically low on storage capacity following compilation, reclaim that wasted disk space instantly by manually dropping the compilation layer records:
+*   **If your host runs critically low on storage capacity following compilation:** reclaim that wasted disk space instantly by manually dropping the compilation layer records:
     ```bash
     docker system prune -a --volumes
     ```
@@ -275,7 +275,7 @@ docker exec -it backup /bin/bash /workspace/bscript/backup.sh --force
 ```
 The backup schedule is set in `docker-compose.yml`.
 
-### ⚡ Recovery Restoration Workflow (pure AI-slope never tested)
+### ⚡ Recovery Restoration Workflow (pure AI-slop never tested)
 If your primary host suffers structural failure or database corruption:
 
 1. **Deploy Bare Stack**: Restore the raw directory structural layouts alongside your custom `.env` parameters file and fire up the cluster core using the fast zero-build flag:
