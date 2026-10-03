@@ -24,7 +24,7 @@ sudo visudo
 
 In the bottom of the file, add the following line: vpsuser ALL=(ALL) NOPASSWD: ALL
 
-Add ssh certificates login for vpsuser
+Add ssh certificates login for vpsuser:
 ```bash
 # Relogin
 su - vpsuser
@@ -35,6 +35,8 @@ nano ~/.ssh/authorized_keys
 ```
 
 Paste the public key there.
+
+Update and install MC:
 ```bash
 # Update host system core package registries
 sudo apt update && sudo apt upgrade -y
@@ -43,7 +45,7 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install mc
 ```
 
-Set up Docker's apt repository.
+Set up Docker's apt repository:
 ```bash
 # Add Docker's official GPG key:
 sudo apt update
@@ -70,7 +72,7 @@ sudo apt update
 sudo apt install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-Add user to docker group (omit sudo for each docker compose).
+Add user to docker group (omit sudo for each docker compose):
 ```bash
 sudo usermod -aG docker vpsuser
 ```
@@ -80,7 +82,7 @@ Verify that Docker is running:
 sudo systemctl status docker
 ```
 
-Remove Ubuntu login welcome message garbage (optional).
+Remove Ubuntu login welcome message garbage (optional):
 ```bash
 sudo chmod -x /etc/update-motd.d/10-help-text
 sudo chmod -x /etc/update-motd.d/50-motd-news
@@ -90,12 +92,12 @@ sudo systemctl disable fwupd fwupd-refresh.timer
 sudo systemctl stop fwupd
 ```
 
-Set/change hostname (optional).
+Set/change hostname (optional):
 ```bash
 sudo hostnamectl set-hostname vps
 ```
 
-Clone this repo.
+Clone this repo:
 ```bash
 mkdir ~/vps
 git clone https://github.com/sunrayenchase/vpsworkspace ~/vps
@@ -105,7 +107,7 @@ git clone https://github.com/sunrayenchase/vpsworkspace ~/vps
 ## 📁 Directory Architecture
 
 ```text
-docker-workspace/
+vps/
 ├── .env                       # Local Environment Variables
 ├── docker-compose.yml         # Main Stack Orchestration File
 ├── Dockerfile.caddy           # Custom Caddy build (with DuckDNS plugin)
@@ -137,9 +139,14 @@ docker-workspace/
 ## 🚀 Deployment Instructions
 
 ### 1. Prerequisites & Environment Setup (`.env`)
-Create a `.env` file in the root workspace folder from your template example. Customize all required environment variables before initialization.
+Create a `.env` file in the root workspace folder from your template example. Customize all required environment variables before initialization:
 ```bash
-# Random 18-symbol URI Path generator
+cp ~/vps/.env.example ~/vps/.env
+nano ~/vps/.env
+```
+
+Use random strings for web URIs
+```bash
 tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 18
 echo
 ```
@@ -157,7 +164,7 @@ Compile the custom Caddy wrapper container image and deploy the entire architect
 docker compose up -d --build
 ```
 
-### ⏳ Custom Caddy build with duckdns and caddy-l4.
+### ⏳ Custom Caddy build with duckdns and caddy-l4
 Compiling Go-based plugins from source is resource-intensive:
 *   **Compilation Time:** On single-core or entry-level low-spec VPS configurations, compiling the custom Caddy binary can take anywhere from **10 to 60 minutes** to complete.
 *   **Disk Space Cache Constraints:** The temporary build dependencies and compiler layers require approximately **~3 GiB of free disk space** to complete successfully.
@@ -166,21 +173,21 @@ Compiling Go-based plugins from source is resource-intensive:
 2.  **`https://github.com/mholt/caddy-l4`**: Intercepts inbound connection streams on raw lower-level sockets before HTTP translation layers. It handles advanced multiplexing logic, permitting Postgres connection routing, raw TLS ALPN inspection tricks, and Proxy Protocol v2 handshakes alongside normal HTTP services. Learn more via the official (not user in the default configuration).
 
 
-### 4. Enter the CLI 3x-ui settings to setup login and password for web-panel access.
+### 4. Enter the CLI 3x-ui settings to setup login and password for web-panel access
 Compile the custom Caddy wrapper container image and deploy the entire architecture in the background (no need to setup SSL certificates - the latter warning in 3x-ui webpanel may be ignored):
 ```bash
 docker exec -it 3x-ui x-ui
 ```
 
-### 5. Enter 3x-ui web-panel for initial setup.
+### 5. Enter 3x-ui web-panel for initial setup
 The proxy infrastructure console is accessible directly at your specialized subdomain URL:
 ```text
 https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
 ```
-*   **3x-ui and xray core upgrades warning:** xray frequently adds backward compatibility issues with new version of the core please be careful with upgrading. Because of this the 3x-ui panel version is fixed to 3.7.0 here.
-*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to ${XUI_INBOUND_PORT} value from .env (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work); Inbound -> Security -> Min Client Ver must be set to "0" (for compatibility with clients with older cores).
-*   **Outboung to WARP:** setup free WARP outbound and route all the outgoing traffic there by default as a safeguard from spoofing the VPS IP by spying software aon your client i.e. by accessing ipinfo.io or similar services.
-*   **Client setting:** 3x-ui automatically passes to clients the connection port set in Inbounds, which must be changed to 443 manually. Connection server can be set ${DUCKDNSDOMAIN}.duckdns.org instead of the server IP.
+*   **3x-ui and xray core upgrades warning:** xray frequently introduces backward compatibility issues with new version of the core so the 3x-ui panel version is fixed to 3.7.0 in `docker-compose.yml`.
+*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to `${XUI_INBOUND_PORT}` value from `.env` (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work); Inbound -> Security -> Min Client Ver must be set to `0` (for compatibility with clients with older xray cores).
+*   **Outboung to WARP:** setup free WARP outbound and route all the outgoing traffic there by default as a safeguard from spoofing the VPS IP on outbound by a software on your client.
+*   **Client setting:** 3x-ui automatically passes to clients configs the connection port set in the inbound settings, which must be changed to `443` manually. Connection server may be set to `${DUCKDNSDOMAIN}.duckdns.org` instead of the server IP.
 
 ---
 
@@ -199,7 +206,7 @@ When the `3x-ui` container starts up, it will automatically detect and mount the
 
 ---
 
-### 6. Enter Syncthing web-panel to setup backup folder sync to your place.
+### 6. Enter Syncthing web-panel to setup backup folder sync to your place
 All cross-machine replication links, connection pairings, and cluster synchronization settings are handled within the Syncthing Web UI. Access it at:
 ```text
 https://${SYNC_WEB}.{DUCKDNSDOMAIN}/${SYNC_SECRET_PATH}/
@@ -266,7 +273,7 @@ To capture a point-in-time checkpoint snapshot immediately before running host u
 ```bash
 docker exec -it backup /bin/bash /workspace/bscript/backup.sh --force
 ```
-The backup schedule is set in docker-compose.yml.
+The backup schedule is set in `docker-compose.yml`.
 
 ### ⚡ Recovery Restoration Workflow (pure AI-slope never tested)
 If your primary host suffers structural failure or database corruption:
