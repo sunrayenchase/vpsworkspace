@@ -169,8 +169,8 @@ Compiling Go-based plugins from source is resource-intensive:
 *   **Compilation Time:** On single-core or entry-level low-spec VPS configurations, compiling the custom Caddy binary can take anywhere from **10 to 60 minutes** to complete.
 *   **Disk Space Cache Constraints:** The temporary build dependencies and compiler layers require approximately **~3 GiB of free disk space** to complete successfully.
 
-1.  **`https://github.com/caddy-dns/duckdns`**: Leverages the DuckDNS API token sequence to perform automated ACME cryptographic wildcard SSL/TLS certificate handling validations via programmatic DNS-01 challenges.
-2.  **`https://github.com/mholt/caddy-l4`**: Intercepts inbound connection streams on raw lower-level sockets before HTTP translation layers. It handles advanced multiplexing logic, permitting Postgres connection routing, raw TLS ALPN inspection tricks, and Proxy Protocol v2 handshakes alongside normal HTTP services. Learn more via the official (not user in the default configuration).
+1.  **[github.com/caddy-dns/duckdns]https://github.com/caddy-dns/duckdns**: Leverages the DuckDNS API token sequence to perform automated ACME cryptographic wildcard SSL/TLS certificate handling validations via programmatic DNS-01 challenges.
+2.  **[github.com/mholt/caddy-l4]https://github.com/mholt/caddy-l4**: Intercepts inbound connection streams on raw lower-level sockets before HTTP translation layers. It handles advanced multiplexing logic, permitting Postgres connection routing, raw TLS ALPN inspection tricks, and Proxy Protocol v2 handshakes alongside normal HTTP services. Learn more via the official (not user in the default configuration).
 
 
 ### 4. Enter the CLI 3x-ui settings to setup login and password for web-panel access
@@ -184,7 +184,7 @@ The proxy infrastructure console is accessible directly at your specialized subd
 ```text
 https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
 ```
-*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to `${XUI_INBOUND_PORT}` value from `.env` (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work); for xray cores starting v26.9.x fingerpring must be set to Chrome `https://github.com/MHSanaei/3x-ui/issues/6568`.
+*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to `${XUI_INBOUND_PORT}` value from `.env` (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work); for xray cores starting v26.9.x fingerpring must be set to Chrome [github.com/MHSanaei/3x-ui/issues/6568]https://github.com/MHSanaei/3x-ui/issues/6568.
 *   **Outboung to WARP:** setup free WARP outbound and route all the outgoing traffic there by default as a safeguard from spoofing the VPS IP on outbound by a software on your client.
 *   **Client setting:** 3x-ui automatically passes to clients configs the connection port set in the inbound settings, which must be changed to `443` manually. Connection server may be set to `${DUCKDNSDOMAIN}.duckdns.org` instead of the server IP.
 *   **Sing-box core compatibility:** with clients on sing-box core change 3x-ui panel version to `3.7.0` in `docker-compose.yml` (xray core `v26.7.28`) and set Inbound -> Security -> Min Client Ver to `0` (see the issue above).
