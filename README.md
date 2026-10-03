@@ -240,7 +240,7 @@ Always execute these orchestration commands directly from within your main root 
     ```bash
     docker compose logs -f [SERVICE_NAME]
     ```
-*   **If your host runs critically low on storage capacity following compilation:** reclaim that wasted disk space instantly by manually dropping the compilation layer records:
+*   **If your host runs critically low on storage capacity following compilation:** reclaim that wasted disk space instantly by manually dropping the compilation layer records (active containers must be spinned up to be exempted from dropping their data):
     ```bash
     docker system prune -a --volumes
     ```
