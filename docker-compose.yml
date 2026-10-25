@@ -20,6 +20,7 @@ services:
       XUI_INBOUND_PORT: ${XUI_INBOUND_PORT}
       XUI_WEB: ${XUI_WEB}
       SYNC_WEB: ${SYNC_WEB}
+      STREAM_WEB: ${STREAM_WEB}
       SYNC_PANEL_PORT: ${SYNC_PANEL_PORT}
       SYNC_SECRET_PATH: ${SYNC_SECRET_PATH}
     volumes:
@@ -33,7 +34,7 @@ services:
         condition: service_healthy
 
   3x-ui:
-    image: ghcr.io/mhsanaei/3x-ui:latest #v3.7.0 - choose for better compatibility with sing-box core clients
+    image: ghcr.io/mhsanaei/3x-ui:v3.7.0 #latest / v3.7.0 fixes the core with working tls fingerprints and compatibility with sing-box
     container_name: 3x-ui
     restart: unless-stopped
     cap_add:

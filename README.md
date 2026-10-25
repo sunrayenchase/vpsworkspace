@@ -184,10 +184,10 @@ The proxy infrastructure console is accessible directly at your specialized subd
 ```text
 https://${XUI_WEB}.${DUCKDNSDOMAIN}/${XUI_SECRET_PATH}/
 ```
-*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to `${XUI_INBOUND_PORT}` value from `.env` (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work); for xray cores starting v26.9.x fingerpring must be set to Chrome [github.com/MHSanaei/3x-ui/issues/6568](https://github.com/MHSanaei/3x-ui/issues/6568).
+*   **3x-ui mandatory inbound setting:** Inbound -> Basics -> Port must be set to `${XUI_INBOUND_PORT}` value from `.env` (ignore the panel warning); Inbound -> Stream -> Proxy must be checked (for caddy reverse proxy to work).
+*   **TLS fingerprints and sing-box core compatibility:** for wider functioning fingerprints selection and compatibility with sing-box core clients the 3x-ui panel version is fixed to `3.7.0` in `docker-compose.yml` (default xray core `v26.7.28`): Inbound -> Security -> Min Client Ver must be set to `0` (see [github.com/MHSanaei/3x-ui/issues/6568](https://github.com/MHSanaei/3x-ui/issues/6568)).
 *   **Outboung to WARP:** setup free WARP outbound and route all the outgoing traffic there by default as a safeguard from spoofing the VPS IP on outbound by a software on your client.
-*   **Client setting:** 3x-ui automatically passes to clients configs the connection port set in the inbound settings, which must be changed to `443` manually. Connection server may be set to `${DUCKDNSDOMAIN}.duckdns.org` instead of the server IP.
-*   **Sing-box core compatibility:** with clients on sing-box core change 3x-ui panel version to `3.7.0` in `docker-compose.yml` (xray core `v26.7.28`) and set Inbound -> Security -> Min Client Ver to `0` (see the issue above).
+*   **Client setting:** 3x-ui automatically passes to clients configs the connection port set in the inbound settings, which must be changed to `443` manually. Connection server can be set to `${DUCKDNSDOMAIN}.duckdns.org` instead of the server IP.
 
 ---
 
